@@ -1,0 +1,50 @@
+service: ind-appointment-cl
+
+frameworkVersion: '4'
+
+plugins:
+  - serverless-iam-roles-per-function
+  - serverless-offline
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: us-east-1
+  memorySize: 150
+  timeout: 15
+  environment:
+    SQS_CL_URL: ${env:SQS_CL_URL}
+    DB_HOST: ${env:DB_HOST}
+    DB_PORT: ${env:DB_PORT}
+    DB_USER: ${env:DB_USER}
+    DB_PASSWORD: ${env:DB_PASSWORD}
+    DB_DATABASE: ${env:DB_DATABASE}
+    DB_LOGGING: ${env:DB_LOGGING}
+    DB_SYNCHRONIZE: ${env:DB_SYNCHRONIZE}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - sqs:ReceiveMessage
+        - sqs:DeleteMessage
+        - sqs:GetQueueAttributes
+        - logs:CreateLogGroup
+        - logs:CreateLogStream
+        - logs:PutLogEvents
+      Resource: "*"
+
+
+functions:
+  appointment_cl:
+    handler: dist/infraestructure/common/sqs/appointment-cl-handler.handler
+    events:
+      - sqs:
+          arn: ${env:SQS_CL_ARN}
+          batchSize: 10
+          maximumBatchingWindow: 60
+package:
+  individually: true
+  excludeDevDependencies: true
+  exclude:
+    - node_modules/@types/**
+    - node_modules/aws-sdk/**
+    - node_modules/typescript/**
